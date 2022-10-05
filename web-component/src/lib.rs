@@ -2,6 +2,8 @@ use js_sys::Function;
 use wasm_bindgen::{convert::IntoWasmAbi, prelude::*, JsCast, JsValue};
 use web_sys::{window, Element, HtmlElement};
 
+use web_component_derive::web_component;
+
 type Result<T> = std::result::Result<T, JsValue>;
 
 // TODO(jwall): Trait methods can't be exported out to js yet so we'll need a wrapper object or we'll need to `Derive` this api in a prop-macro.
@@ -20,81 +22,11 @@ mod tests {
     use web_sys::Text;
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-    #[wasm_bindgen]
+    #[web_component(class_name = "MyElement", element_name = "my-element")]
     #[derive(Default, Debug)]
     pub struct MyElementImpl {}
 
     impl CustomElementImpl for MyElementImpl {}
-
-    impl MyElementImpl {
-        pub fn class_name() -> &'static str {
-            "MyElement"
-        }
-
-        pub fn element_name() -> &'static str {
-            "my-element"
-        }
-
-        pub fn define() -> Result<WebComponentHandle<Self>> {
-            let registry = window().unwrap().custom_elements();
-            let maybe_element = registry.get(Self::element_name());
-            if maybe_element.is_truthy() {
-                return Err("Custom Element has already been defined".into());
-            }
-            let body = format!(
-                "class {name} extends HTMLElement {{
-    constructor() {{
-        super();
-        this._impl = impl();
-    }}
-
-    connectedCallback() {{
-        this._impl.connected_impl(this);
-    }}
-    
-    disconnectedCallback() {{
-        this._impl.disconnected_impl(this);
-    }}
-
-    static get observedAttributes() {{
-        console.log('observed attributes: ', attrs);
-        return attrs;
-    }}
-
-    adoptedCallback() {{
-        console.log('In adoptedCallback');
-        this._impl.adopted_impl(this);
-    }}
-    
-   attributeChangedCallback(name, oldValue, newValue) {{
-        this._impl.attribute_changed_impl(this, name, oldValue, newValue);
-    }}
-}}
-customElements.define(\"{element_name}\", {name});
-var element = customElements.get(\"{element_name}\");
-return element;",
-                name = Self::class_name(),
-                element_name = Self::element_name(),
-            );
-            let fun = Function::new_with_args("impl, attrs", &body);
-            let f: Box<dyn FnMut() -> Self> = Box::new(|| {
-                let obj = Self::new();
-                obj
-            });
-            let constructor_handle = Closure::wrap(f);
-            let element = fun
-                .call2(
-                    &window().unwrap(),
-                    constructor_handle.as_ref().unchecked_ref::<Function>(),
-                    &Self::observed_attributes(),
-                )?
-                .dyn_into()?;
-            Ok(WebComponentHandle {
-                element_constructor: element,
-                impl_handle: constructor_handle,
-            })
-        }
-    }
 
     #[wasm_bindgen]
     impl MyElementImpl {
