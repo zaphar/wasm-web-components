@@ -1,15 +1,55 @@
 use js_sys::Function;
-use wasm_bindgen::{convert::IntoWasmAbi, prelude::*, JsCast, JsValue};
+use wasm_bindgen::{convert::IntoWasmAbi, prelude::Closure, JsValue};
 use web_sys::{window, Element, HtmlElement};
 
-use web_component_derive::web_component;
+pub mod macros;
 
-type Result<T> = std::result::Result<T, JsValue>;
+pub trait WebComponentDef: IntoWasmAbi + Default {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn create() -> Element {
+        window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .create_element(Self::element_name())
+            .unwrap()
+    }
+
+    fn element_name() -> &'static str;
+    fn class_name() -> &'static str;
+}
+
+pub trait WebComponentBinding: WebComponentDef {
+    fn connected(&self, _element: &HtmlElement) {
+        // noop
+    }
+
+    fn disconnected(&self, _element: &HtmlElement) {
+        // noop
+    }
+
+    fn adopted(&self, _element: &HtmlElement) {
+        // noop
+    }
+
+    fn attribute_changed(
+        &self,
+        _element: &HtmlElement,
+        _name: JsValue,
+        _old_value: JsValue,
+        _new_value: JsValue,
+    ) {
+        // noop
+    }
+}
+
+pub trait WebComponent: WebComponentBinding {}
 
 // TODO(jwall): Trait methods can't be exported out to js yet so we'll need a wrapper object or we'll need to `Derive` this api in a prop-macro.
-pub trait CustomElementImpl: IntoWasmAbi {}
-
-pub struct WebComponentHandle<T: CustomElementImpl> {
+pub struct WebComponentHandle<T> {
     pub impl_handle: Closure<dyn FnMut() -> T>,
     pub element_constructor: Function,
 }
@@ -17,52 +57,42 @@ pub struct WebComponentHandle<T: CustomElementImpl> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm_bindgen::JsCast;
+    use wasm_bindgen::prelude::wasm_bindgen;
+    use wasm_bindgen::{JsCast, JsValue};
     use wasm_bindgen_test::wasm_bindgen_test;
     use web_sys::Text;
+    use web_sys::{window, HtmlElement};
+
+    use web_component_derive::web_component;
+
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-    #[web_component(class_name = "MyElement", element_name = "my-element")]
-    #[derive(Default, Debug)]
+    #[web_component(
+        class_name = "MyElement",
+        element_name = "my-element",
+        observed_attrs = "['class']"
+    )]
     pub struct MyElementImpl {}
 
-    impl CustomElementImpl for MyElementImpl {}
-
-    #[wasm_bindgen]
-    impl MyElementImpl {
-        #[wasm_bindgen(constructor)]
-        pub fn new() -> Self {
-            Self::default()
-        }
-
-        #[wasm_bindgen]
-        pub fn create() -> Element {
-            window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_element(Self::element_name())
-                .unwrap()
-        }
-
-        #[wasm_bindgen]
-        pub fn connected_impl(&self, element: &HtmlElement) {
+    impl WebComponentBinding for MyElementImpl {
+        fn connected(&self, element: &HtmlElement) {
             log("Firing connected call back".to_owned());
             let node = Text::new().unwrap();
             node.set_text_content(Some("Added a text node on connect".into()));
             element.append_child(&node).unwrap();
-            log_with_val("element: ".to_owned(), element);
+            log(format!(
+                "element contents: {}",
+                &element.text_content().unwrap()
+            ));
         }
 
-        #[wasm_bindgen]
-        pub fn disconnected_impl(&self, element: &HtmlElement) {
+        fn disconnected(&self, element: &HtmlElement) {
             log("Firing discconnected call back".to_owned());
             let node = element.first_child().unwrap();
             element.remove_child(&node).unwrap();
         }
 
-        #[wasm_bindgen]
-        pub fn adopted_impl(&self, element: &HtmlElement) {
+        fn adopted(&self, element: &HtmlElement) {
             log("Firing adopted call back".to_owned());
             let node = Text::new().unwrap();
             node.set_text_content(Some("Added a text node on adopt".into()));
@@ -70,14 +100,7 @@ mod tests {
             log_with_val("element: ".to_owned(), element);
         }
 
-        pub fn observed_attributes() -> js_sys::Array {
-            let attrs = js_sys::Array::new();
-            attrs.push(&JsValue::from_str("class"));
-            attrs
-        }
-
-        #[wasm_bindgen]
-        pub fn attribute_changed_impl(
+        fn attribute_changed(
             &self,
             element: &HtmlElement,
             name: JsValue,
@@ -121,17 +144,17 @@ mod tests {
         let body = document.body().unwrap();
 
         // Test the connected callback
-        let node = body.append_child(element.as_ref()).unwrap();
+        body.append_child(&element).unwrap();
         assert_eq!(
             element.text_content().unwrap(),
             "Added a text node on connect"
         );
 
         // Test the disconnected callback
-        body.remove_child(&node).unwrap();
+        body.remove_child(&element).unwrap();
         assert_eq!(element.text_content().unwrap(), "");
 
-        body.append_child(element.as_ref()).unwrap();
+        body.append_child(&element).unwrap();
         element.set_attribute("class", "foo").unwrap();
         assert_eq!(
             element.text_content().unwrap(),
