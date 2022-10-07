@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::{Literal, Span};
 use proc_macro_crate::{crate_name, FoundCrate};
@@ -54,13 +55,20 @@ fn get_class_and_element_names(args: Vec<NestedMeta>) -> (Literal, Literal, Lite
             }
         }
     }
+    // TODO(jwall): it should be a compile error if this is missing.
     let class_name = class_name
         .map(|n| n.token())
         .unwrap_or_else(|| LitStr::new("", Span::call_site()).token());
 
-    let element_name = element_name
-        .map(|n| n.token())
-        .unwrap_or_else(|| LitStr::new("", Span::call_site()).token());
+    // TODO(jwall): if Missing we should derive this from the class name.
+    let element_name = match element_name.map(|n| n.token()) {
+        Some(n) => n,
+        None => {
+            let class_kebab = class_name.to_string().to_kebab_case();
+            LitStr::new(&class_kebab, Span::call_site()).token()
+        }
+    };
+
     let observed_attributes = observed_attributes
         .map(|n| n.token())
         .unwrap_or_else(|| LitStr::new("[]", Span::call_site()).token());

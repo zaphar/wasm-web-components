@@ -67,59 +67,6 @@ mod tests {
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-    #[web_component(
-        class_name = "MyElement",
-        element_name = "my-element",
-        observed_attrs = "['class']"
-    )]
-    pub struct MyElementImpl {}
-
-    impl WebComponentBinding for MyElementImpl {
-        fn connected(&self, element: &HtmlElement) {
-            log("Firing connected call back".to_owned());
-            let node = Text::new().unwrap();
-            node.set_text_content(Some("Added a text node on connect".into()));
-            element.append_child(&node).unwrap();
-            log(format!(
-                "element contents: {}",
-                &element.text_content().unwrap()
-            ));
-        }
-
-        fn disconnected(&self, element: &HtmlElement) {
-            log("Firing discconnected call back".to_owned());
-            let node = element.first_child().unwrap();
-            element.remove_child(&node).unwrap();
-        }
-
-        fn adopted(&self, element: &HtmlElement) {
-            log("Firing adopted call back".to_owned());
-            let node = Text::new().unwrap();
-            node.set_text_content(Some("Added a text node on adopt".into()));
-            element.append_child(&node).unwrap();
-            log_with_val("element: ".to_owned(), element);
-        }
-
-        fn attribute_changed(
-            &self,
-            element: &HtmlElement,
-            name: JsValue,
-            old_value: JsValue,
-            new_value: JsValue,
-        ) {
-            log("Firing attribute changed callback".to_owned());
-            let node = element.first_child().unwrap();
-            node.set_text_content(Some(&format!(
-                "Setting {} from {} to {}",
-                name.as_string().unwrap_or("None".to_owned()),
-                old_value.as_string().unwrap_or("None".to_owned()),
-                new_value.as_string().unwrap_or("None".to_owned()),
-            )));
-            element.append_child(&node).unwrap();
-            log_with_val("element: ".to_owned(), element);
-        }
-    }
-
     #[wasm_bindgen]
     extern "C" {
         #[wasm_bindgen(js_namespace = console, js_name = log)]
@@ -132,6 +79,58 @@ mod tests {
     // to the handle we run this all in one single function.
     #[wasm_bindgen_test]
     fn test_component() {
+        #[web_component(
+            class_name = "MyElement",
+            element_name = "my-element",
+            observed_attrs = "['class']"
+        )]
+        pub struct MyElementImpl {}
+
+        impl WebComponentBinding for MyElementImpl {
+            fn connected(&self, element: &HtmlElement) {
+                log("Firing connected call back".to_owned());
+                let node = Text::new().unwrap();
+                node.set_text_content(Some("Added a text node on connect".into()));
+                element.append_child(&node).unwrap();
+                log(format!(
+                    "element contents: {}",
+                    &element.text_content().unwrap()
+                ));
+            }
+
+            fn disconnected(&self, element: &HtmlElement) {
+                log("Firing discconnected call back".to_owned());
+                let node = element.first_child().unwrap();
+                element.remove_child(&node).unwrap();
+            }
+
+            fn adopted(&self, element: &HtmlElement) {
+                log("Firing adopted call back".to_owned());
+                let node = Text::new().unwrap();
+                node.set_text_content(Some("Added a text node on adopt".into()));
+                element.append_child(&node).unwrap();
+                log_with_val("element: ".to_owned(), element);
+            }
+
+            fn attribute_changed(
+                &self,
+                element: &HtmlElement,
+                name: JsValue,
+                old_value: JsValue,
+                new_value: JsValue,
+            ) {
+                log("Firing attribute changed callback".to_owned());
+                let node = element.first_child().unwrap();
+                node.set_text_content(Some(&format!(
+                    "Setting {} from {} to {}",
+                    name.as_string().unwrap_or("None".to_owned()),
+                    old_value.as_string().unwrap_or("None".to_owned()),
+                    new_value.as_string().unwrap_or("None".to_owned()),
+                )));
+                element.append_child(&node).unwrap();
+                log_with_val("element: ".to_owned(), element);
+            }
+        }
         let obj = MyElementImpl::define().expect("Failed to define web component");
         let fun = obj.element_constructor.dyn_ref::<Function>().unwrap();
         assert_eq!(fun.name(), MyElementImpl::class_name());
@@ -170,5 +169,14 @@ mod tests {
             element.text_content().unwrap(),
             "Added a text node on adopt"
         );
+    }
+
+    #[wasm_bindgen_test]
+    fn test_component_no_element_name() {
+        #[web_component(class_name = "AnElement")]
+        pub struct AnElement {}
+        impl WebComponentBinding for AnElement {}
+
+        assert_eq!(AnElement::element_name(), "an-element");
     }
 }
