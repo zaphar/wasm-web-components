@@ -33,7 +33,10 @@ fn expand_crate_ref(name: &str, path: Path) -> syn::Path {
     }
 }
 
-fn get_class_and_element_names(args: Vec<NestedMeta>) -> (Literal, Literal, Literal) {
+fn get_class_and_element_names(
+    args: Vec<NestedMeta>,
+    struct_name: &Ident,
+) -> (Literal, Literal, Literal) {
     let mut class_name = None;
     let mut element_name = None;
     let mut observed_attributes = None;
@@ -54,12 +57,11 @@ fn get_class_and_element_names(args: Vec<NestedMeta>) -> (Literal, Literal, Lite
             }
         }
     }
-    // TODO(jwall): it should be a compile error if this is missing.
-    let class_name = class_name
-        .map(|n| n.token())
-        .unwrap_or_else(|| LitStr::new("", Span::call_site()).token());
 
-    // TODO(jwall): if Missing we should derive this from the class name.
+    let class_name = class_name.map(|n| n.token()).unwrap_or_else(|| {
+        LitStr::new(struct_name.to_string().as_ref(), Span::call_site()).token()
+    });
+
     let element_name = match element_name.map(|n| n.token()) {
         Some(n) => n,
         None => {
@@ -266,7 +268,8 @@ pub fn web_component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(attr as AttributeArgs);
     let item_struct = parse_macro_input!(item as ItemStruct);
 
-    let (class_name, element_name, observed_attributes) = get_class_and_element_names(args);
+    let (class_name, element_name, observed_attributes) =
+        get_class_and_element_names(args, &item_struct.ident);
 
     expand_struct(item_struct, class_name, element_name, observed_attributes)
 }
