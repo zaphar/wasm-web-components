@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::{Literal, Span};
@@ -80,7 +79,7 @@ fn expand_component_def(
     class_name: &Literal,
     element_name: &Literal,
 ) -> syn::ItemImpl {
-    let trait_path = expand_crate_ref("web-component-rs", parse_quote!(WebComponentDef));
+    let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentDef));
     parse_quote! {
         impl #trait_path for #struct_name {
             fn element_name() -> &'static str {
@@ -96,8 +95,8 @@ fn expand_component_def(
 }
 
 fn expand_struct_trait_shim(struct_name: &Ident, observed_attrs: Literal) -> syn::ItemImpl {
-    let trait_path = expand_crate_ref("web-component-rs", parse_quote!(WebComponentDef));
-    let handle_path = expand_crate_ref("web-component-rs", parse_quote!(WebComponentHandle));
+    let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentDef));
+    let handle_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentHandle));
     parse_quote! {
         impl #struct_name {
             pub fn element_name() -> &'static str {
@@ -175,7 +174,7 @@ return element;",
 }
 
 fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
-    let trait_path = expand_crate_ref("web-component-rs", parse_quote!(WebComponentBinding));
+    let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentBinding));
     parse_quote! {
         #[wasm_bindgen::prelude::wasm_bindgen]
         impl #struct_name {
@@ -229,7 +228,7 @@ fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
 }
 
 fn expand_binding(struct_name: &Ident) -> syn::ItemImpl {
-    let trait_path = expand_crate_ref("web-component-rs", parse_quote!(WebComponent));
+    let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponent));
     parse_quote!(
         impl #trait_path for #struct_name {}
     )
@@ -259,6 +258,7 @@ fn expand_struct(
     TokenStream::from(expanded)
 }
 
+/// Creates the necessary Rust and Javascript shims for a Web Component.
 #[proc_macro_attribute]
 pub fn web_component(attr: TokenStream, item: TokenStream) -> TokenStream {
     // TODO(jwall): Attrs for class name and element name

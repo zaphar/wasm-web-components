@@ -1,5 +1,5 @@
 [package]
-name = "web-component-rs"
+name = "wasm-web-component"
 version = "0.1.0"
 edition = "2021"
 author = "Jeremy Wall <jeremy@marzhillstudios.com>"
@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-web-component-derive = {path = "../derive"}
+wasm-web-component-macros = { path = "../macros" }
 
 [dependencies.wasm-bindgen-test]
 version = "0.3"

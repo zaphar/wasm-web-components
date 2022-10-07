@@ -1,2 +1,2 @@
 [workspace]
-members = ["web-component", "derive"]
+members = ["wasm-web-component", "macros"]
