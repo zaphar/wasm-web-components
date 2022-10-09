@@ -1,5 +1,5 @@
 use js_sys::Function;
-use wasm_bindgen::{convert::IntoWasmAbi, prelude::Closure, JsValue};
+use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
 use web_sys::{window, Element, Event, HtmlElement, Window};
 
 /// This attribute proc-macro will generate the following trait implementations
@@ -73,13 +73,9 @@ pub trait WebComponentBinding: WebComponentDef {
 /// of the callback functions for the component.
 pub trait WebComponent: WebComponentBinding {}
 
-/// A handle for your WebComponent Definition. It is important that this
-/// handle is live for as long as your Web-Component might be used.
-pub struct WebComponentHandle<T> {
-    /// The handle for the closure that is used to construct your Rust instance
-    /// in the Javascript shim constructor. If this is dropped then your web component
-    /// will not be able to be constructed properly.
-    pub impl_handle: Closure<dyn FnMut() -> T>,
+/// A handle for your WebComponent Definition. Offers easy access to construct your
+/// element.
+pub struct WebComponentHandle {
     /// A javascript function that can construct your element.
     pub element_constructor: Function,
 }
@@ -164,7 +160,7 @@ mod tests {
         }
 
         Timer::new("custom-element::timing");
-        let handle = BenchElement::define();
+        let _ = BenchElement::define();
 
         let body = window().unwrap().document().unwrap().body().unwrap();
         for _ in 1..100000 {

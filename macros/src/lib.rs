@@ -109,7 +109,7 @@ fn expand_struct_trait_shim(struct_name: &Ident, observed_attrs: Literal) -> syn
                 <Self as #trait_path>::class_name()
             }
 
-            pub fn define() -> std::result::Result<#handle_path<#struct_name>, JsValue> {
+            pub fn define() -> std::result::Result<#handle_path, JsValue> {
                 use wasm_bindgen::JsCast;
                 use web_sys::{window, Element, HtmlElement};
                 let registry = web_sys::window().unwrap().custom_elements();
@@ -151,21 +151,20 @@ return element;",
                     element_name = Self::element_name(),
                     observed_attributes = #observed_attrs,
                 );
-                let fun = Function::new_with_args("impl", &body);
+                let fun = js_sys::Function::new_with_args("impl", &body);
                 let f: Box<dyn FnMut() -> Self> = Box::new(|| {
                     let obj = Self::new();
                     obj
                 });
-                let constructor_handle = Closure::wrap(f);
+                let constructor_handle = wasm_bindgen::prelude::Closure::wrap(f).into_js_value().unchecked_into::<js_sys::Function>();
                 let element = fun
                     .call1(
                         &window().unwrap(),
-                        constructor_handle.as_ref().unchecked_ref::<Function>(),
+                        constructor_handle.as_ref(),
                     )?
                     .dyn_into()?;
-                Ok(WebComponentHandle {
+                Ok(#handle_path {
                     element_constructor: element,
-                    impl_handle: constructor_handle,
                 })
             }
         }
