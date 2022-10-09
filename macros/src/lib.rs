@@ -143,6 +143,10 @@ fn expand_struct_trait_shim(struct_name: &Ident, observed_attrs: Literal) -> syn
    attributeChangedCallback(name, oldValue, newValue) {{
         this._impl.attribute_changed_impl(this, name, oldValue, newValue);
     }}
+
+    handleComponentEvent(evt) {{
+        this._impl.handle_component_event_impl(this, evt);
+    }}
 }}
 customElements.define(\"{element_name}\", {name});
 var element = customElements.get(\"{element_name}\");
@@ -210,6 +214,11 @@ fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
             ) {
                 use #trait_path;
                 self.attribute_changed(element, name, old_value, new_value);
+            }
+
+            pub fn handle_component_event_impl(&self, element: &web_sys::HtmlElement, event: &web_sys::Event) {
+                use #trait_path;
+                self.handle_event(element, event);
             }
         }
     }

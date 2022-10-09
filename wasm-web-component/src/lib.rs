@@ -67,6 +67,10 @@ pub trait WebComponentBinding: WebComponentDef {
     ) {
         // noop
     }
+
+    fn handle_event(&self, _element: &HtmlElement, _event: &Event) {
+        // noop
+    }
 }
 
 /// Marker trait used in the generated shims to assert that their are Rust implemtntations
