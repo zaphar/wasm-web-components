@@ -126,12 +126,10 @@ fn expand_struct_trait_shim(struct_name: &Ident, observed_attrs: Literal) -> syn
 
     connectedCallback() {{
         this._impl.connected_impl(this);
-        console.log(this.textContent);
     }}
     
     disconnectedCallback() {{
         this._impl.disconnected_impl(this);
-        console.log(this.textContent);
     }}
 
     static get observedAttributes() {{
@@ -139,7 +137,6 @@ fn expand_struct_trait_shim(struct_name: &Ident, observed_attrs: Literal) -> syn
     }}
 
     adoptedCallback() {{
-        console.log('In adoptedCallback');
         this._impl.adopted_impl(this);
     }}
     
@@ -183,16 +180,6 @@ fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
             #[wasm_bindgen::prelude::wasm_bindgen(constructor)]
             pub fn new() -> Self {
                 Self::default()
-            }
-
-            #[wasm_bindgen::prelude::wasm_bindgen]
-            pub fn create() -> web_sys::Element {
-                window()
-                    .unwrap()
-                    .document()
-                    .unwrap()
-                    .create_element(Self::element_name())
-                    .unwrap()
             }
 
             #[wasm_bindgen::prelude::wasm_bindgen]

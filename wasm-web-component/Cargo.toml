@@ -42,4 +42,5 @@ features = [
     "ShadowRootInit",
     "ShadowRootMode",
     "Window",
+    "console"
 ]
