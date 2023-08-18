@@ -96,7 +96,7 @@ fn expand_component_def(
     }
 }
 
-fn expand_struct_trait_shim(struct_name: &Ident, observed_attrs: Literal) -> syn::ItemImpl {
+fn expand_struct_trait_shim(struct_name: &Ident, once_name: &Ident, observed_attrs: Literal) -> syn::ItemImpl {
     let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentDef));
     let handle_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentHandle));
     parse_quote! {
@@ -109,6 +109,14 @@ fn expand_struct_trait_shim(struct_name: &Ident, observed_attrs: Literal) -> syn
                 <Self as #trait_path>::class_name()
             }
 
+            #[doc = "Defines this web component element exactly once. Subsequent calls are noops."]
+            pub fn define_once() {
+                #once_name.call_once(|| {
+                    let _ = Self::define();
+                });
+            }
+            
+            #[doc = "Defines this web component element if not defined already otherwise returns an error."]
             pub fn define() -> std::result::Result<#handle_path, JsValue> {
                 use wasm_bindgen::JsCast;
                 use web_sys::{window, Element, HtmlElement};
@@ -238,11 +246,14 @@ fn expand_struct(
     observed_attributes: Literal,
 ) -> TokenStream {
     let struct_name = item_struct.ident.clone();
+    let struct_once_name = Ident::new(&(struct_name.to_string() + "Once"), Span::call_site());
     let component_def = expand_component_def(&struct_name, &class_name, &element_name);
-    let non_wasm_impl = expand_struct_trait_shim(&struct_name, observed_attributes);
+    let non_wasm_impl = expand_struct_trait_shim(&struct_name, &struct_once_name, observed_attributes);
     let wasm_shim = expand_wasm_shim(&struct_name);
     let binding_trait = expand_binding(&struct_name);
     let expanded = quote! {
+        use std::sync::Once;
+        static #struct_once_name: Once = Once::new();
         #[wasm_bindgen::prelude::wasm_bindgen]
         #[derive(Default, Debug)]
         #item_struct
