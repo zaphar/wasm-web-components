@@ -46,18 +46,26 @@ pub trait WebComponentDef: IntoWasmAbi + Default {
 /// Each method is optional. You only need to implement the ones
 /// you want to specify behavior for.
 pub trait WebComponentBinding: WebComponentDef {
+    /// Called when the web component is connected to the DOM.
+    /// This is when you should do any setup like attaching a ShadowDom
+    /// or appending elements.
     fn connected(&self, _element: &HtmlElement) {
         // noop
     }
 
+    /// Called when the web component is disconnected from the DOM.
     fn disconnected(&self, _element: &HtmlElement) {
         // noop
     }
 
+    /// Called When the web component is moved to a new document.
     fn adopted(&self, _element: &HtmlElement) {
         // noop
     }
 
+    /// Called when one of the observed attributes has changed.
+    /// the observedc attributes are listed in the observed_attrs argument to the
+    /// `#[web_component(observed_attrs = "['attr1', 'attr2']")` attribute.
     fn attribute_changed(
         &self,
         _element: &HtmlElement,
@@ -68,6 +76,7 @@ pub trait WebComponentBinding: WebComponentDef {
         // noop
     }
 
+    /// Top level event handler for this custome element.
     fn handle_event(&self, _element: &HtmlElement, _event: &Event) {
         // noop
     }

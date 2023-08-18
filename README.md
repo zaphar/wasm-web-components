@@ -15,8 +15,8 @@
 -->
 # An experiment in Rust Web Assembly Web Components
 
-This set of crates should not be considered production ready. Web Assembly is not
+This set of crates should not be considered production ready. WebAssembly is not
 quite ready for general use in a Web Component. Getting this to work involved 
-something of a Rub Goldberg machine involving a Javascript shim and a wasm_bindgen
-Rust shim with a several traits. The boilerplate is generated using a proc-macro
+something of a Rub Goldberg machine involving a Javascript shim and a wasm\_bindgen
+Rust shim with several traits. The boilerplate is generated using a proc-macro
 to make it more generally reusable.
