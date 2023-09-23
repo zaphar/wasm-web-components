@@ -65,7 +65,7 @@ fn get_class_and_element_names(
     let element_name = match element_name.map(|n| n.token()) {
         Some(n) => n,
         None => {
-            let class_kebab = class_name.to_string().to_kebab_case();
+            let class_kebab = class_name.to_string().to_kebab_case().to_lowercase();
             LitStr::new(&class_kebab, Span::call_site()).token()
         }
     };
@@ -117,7 +117,7 @@ fn expand_struct_trait_shim(struct_name: &Ident, once_name: &Ident, observed_att
             }
             
             #[doc = "Defines this web component element if not defined already otherwise returns an error."]
-            pub fn define() -> std::result::Result<#handle_path, JsValue> {
+            pub fn define() -> std::result::Result<#handle_path, wasm_bindgen::JsValue> {
                 use wasm_bindgen::JsCast;
                 use web_sys::{window, Element, HtmlElement};
                 let registry = web_sys::window().unwrap().custom_elements();
@@ -253,6 +253,8 @@ fn expand_struct(
     let binding_trait = expand_binding(&struct_name);
     let expanded = quote! {
         use std::sync::Once;
+        use wasm_bindgen;
+        #[allow(non_snake_case)]
         static #struct_once_name: Once = Once::new();
         #[wasm_bindgen::prelude::wasm_bindgen]
         #[derive(Default, Debug)]
