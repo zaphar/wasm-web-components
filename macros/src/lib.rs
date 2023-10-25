@@ -246,7 +246,7 @@ fn expand_struct(
     observed_attributes: Literal,
 ) -> TokenStream {
     let struct_name = item_struct.ident.clone();
-    let struct_once_name = Ident::new(&(struct_name.to_string() + "Once"), Span::call_site());
+    let struct_once_name = Ident::new(&(struct_name.to_string().to_snake_case().to_uppercase() + "_ONCE"), Span::call_site());
     let component_def = expand_component_def(&struct_name, &class_name, &element_name);
     let non_wasm_impl = expand_struct_trait_shim(&struct_name, &struct_once_name, observed_attributes);
     let wasm_shim = expand_wasm_shim(&struct_name);
