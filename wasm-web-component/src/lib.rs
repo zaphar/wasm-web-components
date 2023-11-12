@@ -334,13 +334,15 @@ mod tests {
                     .unwrap()
                     .into();
                 let el: HtmlTemplateElement = val.into();
-                el
+                el.set_attribute("id", "template-id").unwrap();
+                return el;
             }
         }
 
         let body = window().unwrap().document().unwrap().body().unwrap();
         assert!(!body.last_child().unwrap().has_type::<HtmlTemplateElement>());
-        MyTemplate::define_once();
+        let id = MyTemplate::define_once();
+        assert_eq!(id.unwrap(), &Some(String::from("template-id")));
         assert!(body.last_child().unwrap().has_type::<HtmlTemplateElement>());
     }
 }

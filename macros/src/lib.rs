@@ -285,21 +285,29 @@ fn expand_template_struct(item_struct: ItemStruct) -> TokenStream {
     );
     let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(TemplateElement));
     let expanded = quote! {
-        use std::sync::Once;
+        use std::sync::OnceLock;
         use web_sys::Node;
-        static #struct_once_name: Once = Once::new();
+        static #struct_once_name: OnceLock<Option<String>> = OnceLock::new();
         #item_struct
         impl #trait_path for #struct_name {}
         impl #struct_name {
-            #[doc = "Defines this HtmlTemplateElement and adds it to the document exactly once. Subsequent calls are noops."]
-            pub fn define_once() { // TODO(jwall): Should this return the element?
-                #struct_once_name.call_once(|| {
+            #[doc = "Defines this HtmlTemplateElement and adds it to the document exactly once. Subsequent calls are noops. Returns the the template element id it exists on the template element."]
+            pub fn define_once() -> Option<&'static Option<String>> {
+                #struct_once_name.get_or_init(|| {
                     let template_element = Self::render();
+                    let id: Option<String> = template_element.get_attribute("id");
                     let body = web_sys::window().expect("Failed to get window")
                         .document().expect("Failed to get window document").
                         body().expect("Failed to get document body");
                     body.append_child(template_element.as_ref()).expect("Failed to add template element to document");
-                })
+                    return id;
+                });
+                return #struct_once_name.get();
+            }
+            
+            #[doc = "Returns the the template element id it exists. None if the element has not been defined yet. Some(&None) if the element has no id. Some(&Some(id)) if the element has an id."]
+            pub fn get_id() -> Option<&'static Option<String>> {
+                return #struct_once_name.get();
             }
         }
     };
