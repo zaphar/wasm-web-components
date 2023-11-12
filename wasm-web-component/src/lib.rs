@@ -1,5 +1,7 @@
 use js_sys::Function;
 use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
+#[cfg(feature = "HtmlTemplateElement")]
+use web_sys::HtmlTemplateElement;
 use web_sys::{window, Element, Event, HtmlElement, Window};
 
 /// This attribute proc-macro will generate the following trait implementations
@@ -82,9 +84,21 @@ pub trait WebComponentBinding: WebComponentDef {
     }
 }
 
-/// Marker trait used in the generated shims to assert that their are Rust implemtntations
+/// Marker trait used in the generated shims to assert that there are Rust implemtntations
 /// of the callback functions for the component.
 pub trait WebComponent: WebComponentBinding {}
+
+/// Defines the template element rendering method.
+#[cfg(feature = "HtmlTemplateElement")]
+pub trait TemplateElementRender {
+    // Creates and returns an HtmlTemplateElement.
+    fn render() -> HtmlTemplateElement;
+}
+
+/// Marker trait used in the generated shims to assert that there are Rust implemtntations
+/// of the rendering function for the component.
+#[cfg(feature = "HtmlTemplateElement")]
+pub trait TemplateElement: TemplateElementRender {}
 
 /// A handle for your WebComponent Definition. Offers easy access to construct your
 /// element.
@@ -300,5 +314,33 @@ mod tests {
 
         assert_eq!(ThisElement::class_name(), "ThisElement");
         assert_eq!(ThisElement::element_name(), "this-old-element");
+    }
+
+    // TODO(jwall): Benchmarks for TemplateElements?
+    #[cfg(feature = "HtmlTemplateElement")]
+    #[wasm_bindgen_test]
+    fn test_template_element_render_once() {
+        use wasm_web_component_macros::template_element;
+
+        #[template_element]
+        pub struct MyTemplate();
+        impl TemplateElementRender for MyTemplate {
+            fn render() -> HtmlTemplateElement {
+                let val: JsValue = window()
+                    .unwrap()
+                    .document()
+                    .unwrap()
+                    .create_element("template")
+                    .unwrap()
+                    .into();
+                let el: HtmlTemplateElement = val.into();
+                el
+            }
+        }
+
+        let body = window().unwrap().document().unwrap().body().unwrap();
+        assert!(!body.last_child().unwrap().has_type::<HtmlTemplateElement>());
+        MyTemplate::define_once();
+        assert!(body.last_child().unwrap().has_type::<HtmlTemplateElement>());
     }
 }

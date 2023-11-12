@@ -2,15 +2,14 @@
 name = "wasm-web-component"
 version = "0.1.1"
 edition = "2021"
-author = "Jeremy Wall <jeremy@marzhillstudios.com>"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-wasm-web-component-macros = { path = "../macros" }
+[dependencies.wasm-web-component-macros]
+path = "../macros"
 
 [dependencies.wasm-bindgen-test]
 version = "0.3"
@@ -26,7 +25,6 @@ version = "0.3"
 features = [
     "CustomElementRegistry",
     "Document",
-    #"DocumentFragment",
     "KeyboardEvent",
     "Event",
     "EventTarget",
@@ -35,7 +33,6 @@ features = [
     "Text",
     "HtmlBaseElement",
     "HtmlElement",
-    "HtmlTemplateElement",
     "HtmlSlotElement",
     "Node",
     "ShadowRoot",
@@ -43,4 +40,11 @@ features = [
     "ShadowRootMode",
     "Window",
     "console"
+]
+
+[features]
+default = ["HtmlTemplateElement"]
+HtmlTemplateElement = [
+    "web-sys/HtmlTemplateElement",
+    "wasm-web-component-macros/HtmlTemplateElement",
 ]

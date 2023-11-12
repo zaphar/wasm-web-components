@@ -17,3 +17,6 @@ str_inflector = "0.12.0"
 [dependencies.syn]
 version = "1.0.101"
 features = ["full"]
+
+[features]
+HtmlTemplateElement = []

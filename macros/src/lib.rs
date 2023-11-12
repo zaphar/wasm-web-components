@@ -96,7 +96,11 @@ fn expand_component_def(
     }
 }
 
-fn expand_struct_trait_shim(struct_name: &Ident, once_name: &Ident, observed_attrs: Literal) -> syn::ItemImpl {
+fn expand_wc_struct_trait_shim(
+    struct_name: &Ident,
+    once_name: &Ident,
+    observed_attrs: Literal,
+) -> syn::ItemImpl {
     let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentDef));
     let handle_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentHandle));
     parse_quote! {
@@ -115,7 +119,7 @@ fn expand_struct_trait_shim(struct_name: &Ident, once_name: &Ident, observed_att
                     let _ = Self::define();
                 });
             }
-            
+
             #[doc = "Defines this web component element if not defined already otherwise returns an error."]
             pub fn define() -> std::result::Result<#handle_path, wasm_bindgen::JsValue> {
                 use wasm_bindgen::JsCast;
@@ -239,16 +243,20 @@ fn expand_binding(struct_name: &Ident) -> syn::ItemImpl {
     )
 }
 
-fn expand_struct(
+fn expand_web_component_struct(
     item_struct: ItemStruct,
     class_name: Literal,
     element_name: Literal,
     observed_attributes: Literal,
 ) -> TokenStream {
     let struct_name = item_struct.ident.clone();
-    let struct_once_name = Ident::new(&(struct_name.to_string().to_snake_case().to_uppercase() + "_ONCE"), Span::call_site());
+    let struct_once_name = Ident::new(
+        &(struct_name.to_string().to_snake_case().to_uppercase() + "_ONCE"),
+        Span::call_site(),
+    );
     let component_def = expand_component_def(&struct_name, &class_name, &element_name);
-    let non_wasm_impl = expand_struct_trait_shim(&struct_name, &struct_once_name, observed_attributes);
+    let non_wasm_impl =
+        expand_wc_struct_trait_shim(&struct_name, &struct_once_name, observed_attributes);
     let wasm_shim = expand_wasm_shim(&struct_name);
     let binding_trait = expand_binding(&struct_name);
     let expanded = quote! {
@@ -268,6 +276,36 @@ fn expand_struct(
     TokenStream::from(expanded)
 }
 
+#[cfg(feature = "HtmlTemplateElement")]
+fn expand_template_struct(item_struct: ItemStruct) -> TokenStream {
+    let struct_name = item_struct.ident.clone();
+    let struct_once_name = Ident::new(
+        &(struct_name.to_string().to_snake_case().to_uppercase() + "_ONCE"),
+        Span::call_site(),
+    );
+    let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(TemplateElement));
+    let expanded = quote! {
+        use std::sync::Once;
+        use web_sys::Node;
+        static #struct_once_name: Once = Once::new();
+        #item_struct
+        impl #trait_path for #struct_name {}
+        impl #struct_name {
+            #[doc = "Defines this HtmlTemplateElement and adds it to the document exactly once. Subsequent calls are noops."]
+            pub fn define_once() { // TODO(jwall): Should this return the element?
+                #struct_once_name.call_once(|| {
+                    let template_element = Self::render();
+                    let body = web_sys::window().expect("Failed to get window")
+                        .document().expect("Failed to get window document").
+                        body().expect("Failed to get document body");
+                    body.append_child(template_element.as_ref()).expect("Failed to add template element to document");
+                })
+            }
+        }
+    };
+    TokenStream::from(expanded)
+}
+
 /// Creates the necessary Rust and Javascript shims for a Web Component.
 #[proc_macro_attribute]
 pub fn web_component(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -279,5 +317,13 @@ pub fn web_component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let (class_name, element_name, observed_attributes) =
         get_class_and_element_names(args, &item_struct.ident);
 
-    expand_struct(item_struct, class_name, element_name, observed_attributes)
+    expand_web_component_struct(item_struct, class_name, element_name, observed_attributes)
+}
+
+/// Creates the neccessary Rust and Javascript shims for rendering an HtmlTemplateElement
+#[cfg(feature = "HtmlTemplateElement")]
+#[proc_macro_attribute]
+pub fn template_element(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let item_struct = parse_macro_input!(item as ItemStruct);
+    expand_template_struct(item_struct)
 }
