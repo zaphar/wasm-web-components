@@ -142,11 +142,10 @@ fn expand_wc_struct_trait_shim(
                 "class {name} extends HTMLElement {{
     constructor() {{
         super();
-        var self = this;
-        self._impl = impl();
-        self._impl.init();
-        for (const t of self.getObservedEvents()) {{
-            self.addEventListener(t, function(evt) {{ self.handleComponentEvent(evt); }} );
+        this._impl = impl();
+        this._impl.init_impl(this);
+        for (const t of this.observedEvents()) {{
+            this.addEventListener(t, function(evt) {{ this.handleComponentEvent(evt); }} );
         }}
     }}
 
@@ -215,6 +214,12 @@ fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
             #[wasm_bindgen::prelude::wasm_bindgen(constructor)]
             pub fn new() -> Self {
                 Self::default()
+            }
+
+            #[wasm_bindgen::prelude::wasm_bindgen]
+            pub fn init_impl(&self, element: &web_sys::HtmlElement) {
+                use #trait_path;
+                self.init(element);
             }
 
             #[wasm_bindgen::prelude::wasm_bindgen]

@@ -123,15 +123,15 @@ pub trait WebComponentDef: IntoWasmAbi + Default {
     }
 
     fn create() -> Element {
-        Self::create_in_window(window().unwrap())
+        Self::create_in_window(window().expect("Failed to get window"))
     }
 
     fn create_in_window(window: Window) -> Element {
         window
             .document()
-            .unwrap()
+            .expect("Failed to get document")
             .create_element(Self::element_name())
-            .unwrap()
+            .expect("Failed to create element")
     }
 
     fn element_name() -> &'static str;
@@ -304,7 +304,7 @@ mod tests {
         #[web_component(
             class_name = "MyElement",
             element_name = "my-element",
-            observed_attrs = "['class']"
+            observed_attrs = "['class']",
         )]
         pub struct MyElementImpl {}
 
@@ -383,7 +383,6 @@ mod tests {
                 "Added a text node on adopt"
             );
         }
-        // Then we can have the new document adopt this node.
     }
 
     #[wasm_bindgen_test]
