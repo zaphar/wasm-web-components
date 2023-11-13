@@ -16,7 +16,8 @@ use web_sys::{window, Element, Event, HtmlElement, Window};
 /// It supports three optional attributes `name = value` parameters.
 /// * `class_name = "ClassName"` - The class name to use for the javascript shim. If not provided uses the structs name instead.
 /// * `element_name = "class-name"` - A valid custom element name to use for the element. if not proviced derives it from the class name.
-/// * `observed_attrs = "['attr1', attr2']"` - A javascript array with a list of observed attributes for this compoment. Defaults to "[]".
+/// * `observed_attrs = "['attr1', 'attr2']"` - A javascript array with a list of observed attributes for this compoment. Defaults to "[]".
+/// * `observed_events = "['click', 'change']"` - A javascript array with a list of observed event types for this compoment. Defaults to "[]".
 ///
 /// It will also create a `Self::define_once` method that will define the WebComponent exactly
 /// once.
@@ -28,6 +29,7 @@ use web_sys::{window, Element, Event, HtmlElement, Window};
 ///     class_name = "MyElement",
 ///     element_name = "my-element",
 ///     observed_attrs = "['class']"
+///     observed_events = "['click']"
 /// )]
 /// pub struct MyElementImpl {}
 /// 
@@ -64,6 +66,10 @@ use web_sys::{window, Element, Event, HtmlElement, Window};
 ///             new_value.as_string().unwrap_or("None".to_owned()),
 ///         )));
 ///         element.append_child(&node).unwrap();
+///     }
+///
+///     fn handle_event(&self, element: &HtmlElement, event: &Event)) {
+///         // handle this event
 ///     }
 /// }
 ///
@@ -177,7 +183,7 @@ pub trait WebComponentBinding: WebComponentDef {
         // noop
     }
 
-    /// Top level event handler for this custome element.
+    /// Top level event handler for this custom element.
     fn handle_event(&self, _element: &HtmlElement, _event: &Event) {
         // noop
     }
@@ -413,6 +419,8 @@ mod tests {
         assert_eq!(ThisElement::class_name(), "ThisElement");
         assert_eq!(ThisElement::element_name(), "this-old-element");
     }
+
+    // TODO(jwall): Tests for event handling
 
     // TODO(jwall): Benchmarks for TemplateElements?
     #[cfg(feature = "HtmlTemplateElement")]
