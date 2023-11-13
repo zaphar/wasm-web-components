@@ -133,7 +133,9 @@ fn expand_wc_struct_trait_shim(
                 "class {name} extends HTMLElement {{
     constructor() {{
         super();
-        this._impl = impl();
+        var self = this;
+        self._impl = impl();
+        self._impl.init();
     }}
 
     connectedCallback() {{

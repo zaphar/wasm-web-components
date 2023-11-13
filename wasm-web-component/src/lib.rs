@@ -142,6 +142,11 @@ pub trait WebComponentDef: IntoWasmAbi + Default {
 /// Each method is optional. You only need to implement the ones
 /// you want to specify behavior for.
 pub trait WebComponentBinding: WebComponentDef {
+    /// Called during element construction.
+    fn init(&self, _element: &HtmlElement) {
+        // noop
+    }
+    
     /// Called when the web component is connected to the DOM.
     /// This is when you should do any setup like attaching a ShadowDom
     /// or appending elements.
