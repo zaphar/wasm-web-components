@@ -36,10 +36,11 @@ fn expand_crate_ref(name: &str, path: Path) -> syn::Path {
 fn get_class_and_element_names(
     args: Vec<NestedMeta>,
     struct_name: &Ident,
-) -> (Literal, Literal, Literal) {
+) -> (Literal, Literal, Literal, Literal) {
     let mut class_name = None;
     let mut element_name = None;
     let mut observed_attributes = None;
+    let mut observed_events = None;
     for arg in args {
         if let NestedMeta::Meta(Meta::NameValue(nv)) = arg {
             if nv.path.is_ident("class_name") {
@@ -53,6 +54,10 @@ fn get_class_and_element_names(
             } else if nv.path.is_ident("observed_attrs") {
                 if let Lit::Str(nm) = nv.lit {
                     observed_attributes = Some(nm);
+                }
+            } else if nv.path.is_ident("observed_events") {
+                if let Lit::Str(nm) = nv.lit {
+                    observed_events = Some(nm);
                 }
             }
         }
@@ -73,7 +78,10 @@ fn get_class_and_element_names(
     let observed_attributes = observed_attributes
         .map(|n| n.token())
         .unwrap_or_else(|| LitStr::new("[]", Span::call_site()).token());
-    (class_name, element_name, observed_attributes)
+    let observed_events = observed_events
+        .map(|n| n.token())
+        .unwrap_or_else(|| LitStr::new("[]", Span::call_site()).token());
+    (class_name, element_name, observed_attributes, observed_events)
 }
 
 fn expand_component_def(
@@ -100,6 +108,7 @@ fn expand_wc_struct_trait_shim(
     struct_name: &Ident,
     once_name: &Ident,
     observed_attrs: Literal,
+    observed_events: Literal,
 ) -> syn::ItemImpl {
     let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentDef));
     let handle_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentHandle));
@@ -136,6 +145,9 @@ fn expand_wc_struct_trait_shim(
         var self = this;
         self._impl = impl();
         self._impl.init();
+        for (const t of self.getObservedEvents()) {{
+            self.addEventListener(t, function(evt) {{ self.handleComponentEvent(evt); }} );
+        }}
     }}
 
     connectedCallback() {{
@@ -150,14 +162,19 @@ fn expand_wc_struct_trait_shim(
         return {observed_attributes};
     }}
 
+    observedEvents() {{
+        return {observed_events};
+    }}
+
     adoptedCallback() {{
         this._impl.adopted_impl(this);
     }}
     
-   attributeChangedCallback(name, oldValue, newValue) {{
+    attributeChangedCallback(name, oldValue, newValue) {{
         this._impl.attribute_changed_impl(this, name, oldValue, newValue);
     }}
 
+    // TODO(jwall): We need to provide a way to attach this event handler properly
     handleComponentEvent(evt) {{
         this._impl.handle_component_event_impl(this, evt);
     }}
@@ -168,6 +185,7 @@ return element;",
                     name = Self::class_name(),
                     element_name = Self::element_name(),
                     observed_attributes = #observed_attrs,
+                    observed_events = #observed_events,
                 );
                 let fun = js_sys::Function::new_with_args("impl", &body);
                 let f: Box<dyn FnMut() -> Self> = Box::new(|| {
@@ -250,6 +268,7 @@ fn expand_web_component_struct(
     class_name: Literal,
     element_name: Literal,
     observed_attributes: Literal,
+    observed_events: Literal,
 ) -> TokenStream {
     let struct_name = item_struct.ident.clone();
     let struct_once_name = Ident::new(
@@ -258,7 +277,7 @@ fn expand_web_component_struct(
     );
     let component_def = expand_component_def(&struct_name, &class_name, &element_name);
     let non_wasm_impl =
-        expand_wc_struct_trait_shim(&struct_name, &struct_once_name, observed_attributes);
+        expand_wc_struct_trait_shim(&struct_name, &struct_once_name, observed_attributes, observed_events);
     let wasm_shim = expand_wasm_shim(&struct_name);
     let binding_trait = expand_binding(&struct_name);
     let expanded = quote! {
@@ -324,10 +343,10 @@ pub fn web_component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(attr as AttributeArgs);
     let item_struct = parse_macro_input!(item as ItemStruct);
 
-    let (class_name, element_name, observed_attributes) =
+    let (class_name, element_name, observed_attributes, observed_events) =
         get_class_and_element_names(args, &item_struct.ident);
 
-    expand_web_component_struct(item_struct, class_name, element_name, observed_attributes)
+    expand_web_component_struct(item_struct, class_name, element_name, observed_attributes, observed_events)
 }
 
 /// Creates the neccessary Rust and Javascript shims for rendering an HtmlTemplateElement
