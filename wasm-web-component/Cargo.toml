@@ -24,8 +24,8 @@ version = "0.3"
 version = "0.3"
 features = [
     "CustomElementRegistry",
+    "CustomEvent",
     "Document",
-    "KeyboardEvent",
     "Event",
     "EventTarget",
     "Element",

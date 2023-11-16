@@ -144,8 +144,15 @@ fn expand_wc_struct_trait_shim(
         super();
         this._impl = impl();
         this._impl.init_impl(this);
-        for (const t of this.observedEvents()) {{
-            this.addEventListener(t, function(evt) {{ this.handleComponentEvent(evt); }} );
+        var self = this;
+        if (self.shadowRoot) {{
+            for (const t of this.observedEvents()) {{
+                self.shadowRoot.addEventListener(t, function(evt) {{ self.handleComponentEvent(evt); }} );
+            }}
+        }} else {{
+            for (const t of self.observedEvents()) {{
+                self.addEventListener(t, function(evt) {{ self.handleComponentEvent(evt); }} );
+            }}
         }}
     }}
 
