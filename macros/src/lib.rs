@@ -130,9 +130,9 @@ fn expand_wc_struct_trait_shim(
             }
 
             #[doc = "Defines this web component element if not defined already otherwise returns an error."]
-            pub fn define() -> std::result::Result<#handle_path, wasm_bindgen::JsValue> {
-                use wasm_bindgen::JsCast;
-                use web_sys::{window, Element, HtmlElement};
+            pub fn define() -> std::result::Result<#handle_path, ::wasm_bindgen::JsValue> {
+                use ::wasm_bindgen::JsCast;
+                use web_sys::{Element, HtmlElement};
                 let registry = web_sys::window().unwrap().custom_elements();
                 let maybe_element = registry.get(Self::element_name());
                 if maybe_element.is_truthy() {
@@ -198,10 +198,10 @@ return element;",
                     let obj = Self::new();
                     obj
                 });
-                let constructor_handle = wasm_bindgen::prelude::Closure::wrap(f).into_js_value().unchecked_into::<js_sys::Function>();
+                let constructor_handle = ::wasm_bindgen::prelude::Closure::wrap(f).into_js_value().unchecked_into::<js_sys::Function>();
                 let element = fun
                     .call1(
-                        &window().unwrap(),
+                        &web_sys::window().unwrap(),
                         constructor_handle.as_ref(),
                     )?
                     .dyn_into()?;
@@ -216,45 +216,45 @@ return element;",
 fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
     let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentBinding));
     parse_quote! {
-        #[wasm_bindgen::prelude::wasm_bindgen]
+        #[::wasm_bindgen::prelude::wasm_bindgen]
         impl #struct_name {
-            #[wasm_bindgen::prelude::wasm_bindgen(constructor)]
+            #[::wasm_bindgen::prelude::wasm_bindgen(constructor)]
             pub fn new() -> Self {
                 Self::default()
             }
 
-            #[wasm_bindgen::prelude::wasm_bindgen]
+            #[::wasm_bindgen::prelude::wasm_bindgen]
             pub fn init_impl(&self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.init(element);
             }
 
-            #[wasm_bindgen::prelude::wasm_bindgen]
+            #[::wasm_bindgen::prelude::wasm_bindgen]
             pub fn connected_impl(&self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.connected(element);
             }
 
-            #[wasm_bindgen::prelude::wasm_bindgen]
+            #[::wasm_bindgen::prelude::wasm_bindgen]
             pub fn disconnected_impl(&self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.disconnected(element);
             }
 
-            #[wasm_bindgen::prelude::wasm_bindgen]
+            #[::wasm_bindgen::prelude::wasm_bindgen]
             pub fn adopted_impl(&self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.adopted(element);
             }
 
 
-            #[wasm_bindgen::prelude::wasm_bindgen]
+            #[::wasm_bindgen::prelude::wasm_bindgen]
             pub fn attribute_changed_impl(
                 &self,
                 element: &web_sys::HtmlElement,
-                name: wasm_bindgen::JsValue,
-                old_value: wasm_bindgen::JsValue,
-                new_value: wasm_bindgen::JsValue,
+                name: ::wasm_bindgen::JsValue,
+                old_value: ::wasm_bindgen::JsValue,
+                new_value: ::wasm_bindgen::JsValue,
             ) {
                 use #trait_path;
                 self.attribute_changed(element, name, old_value, new_value);
@@ -293,11 +293,9 @@ fn expand_web_component_struct(
     let wasm_shim = expand_wasm_shim(&struct_name);
     let binding_trait = expand_binding(&struct_name);
     let expanded = quote! {
-        use std::sync::Once;
-        use wasm_bindgen;
         #[allow(non_snake_case)]
-        static #struct_once_name: Once = Once::new();
-        #[wasm_bindgen::prelude::wasm_bindgen]
+        static #struct_once_name: std::sync::Once = std::sync::Once::new();
+        #[::wasm_bindgen::prelude::wasm_bindgen]
         #[derive(Default, Debug)]
         #item_struct
         #component_def
@@ -318,9 +316,8 @@ fn expand_template_struct(item_struct: ItemStruct) -> TokenStream {
     );
     let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(TemplateElement));
     let expanded = quote! {
-        use std::sync::OnceLock;
         use web_sys::Node;
-        static #struct_once_name: OnceLock<Option<String>> = OnceLock::new();
+        static #struct_once_name: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
         #item_struct
         impl #trait_path for #struct_name {}
         impl #struct_name {

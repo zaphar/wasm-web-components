@@ -1,4 +1,5 @@
 use js_sys::Function;
+use wasm_bindgen::JsCast;
 use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
 #[cfg(feature = "HtmlTemplateElement")]
 use web_sys::HtmlTemplateElement;
@@ -138,6 +139,11 @@ pub trait WebComponentDef: IntoWasmAbi + Default {
             .expect("Failed to get document")
             .create_element(Self::element_name())
             .expect("Failed to create element")
+    }
+
+    /// Creates a custom event
+    fn custom_event(event_type: &str) -> web_sys::Event {
+        web_sys::CustomEvent::new(event_type).unwrap().dyn_into().unwrap()
     }
 
     fn element_name() -> &'static str;
