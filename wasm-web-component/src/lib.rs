@@ -159,10 +159,21 @@ pub trait WebComponentBinding: WebComponentDef {
         // noop
     }
     
+    fn init_mut(&mut self, _element: &HtmlElement) {
+        // noop
+    }
+    
     /// Called when the web component is connected to the DOM.
     /// This is when you should do any setup like attaching a ShadowDom
     /// or appending elements.
     fn connected(&self, _element: &HtmlElement) {
+        // noop
+    }
+
+    /// Called when the web component is connected to the DOM.
+    /// This is when you should do any setup like attaching a ShadowDom
+    /// or appending elements.
+    fn connected_mut(&mut self, _element: &HtmlElement) {
         // noop
     }
 
@@ -171,8 +182,18 @@ pub trait WebComponentBinding: WebComponentDef {
         // noop
     }
 
+    /// Called when the web component is disconnected from the DOM.
+    fn disconnected_mut(&mut self, _element: &HtmlElement) {
+        // noop
+    }
+
     /// Called When the web component is moved to a new document.
     fn adopted(&self, _element: &HtmlElement) {
+        // noop
+    }
+
+    /// Called When the web component is moved to a new document.
+    fn adopted_mut(&mut self, _element: &HtmlElement) {
         // noop
     }
 
@@ -189,8 +210,26 @@ pub trait WebComponentBinding: WebComponentDef {
         // noop
     }
 
+    /// Called when one of the observed attributes has changed.
+    /// the observedc attributes are listed in the observed_attrs argument to the
+    /// `#[web_component(observed_attrs = "['attr1', 'attr2']")` attribute.
+    fn attribute_changed_mut(
+        &mut self,
+        _element: &HtmlElement,
+        _name: JsValue,
+        _old_value: JsValue,
+        _new_value: JsValue,
+    ) {
+        // noop
+    }
+
     /// Top level event handler for this custom element.
     fn handle_event(&self, _element: &HtmlElement, _event: &Event) {
+        // noop
+    }
+    
+    /// Top level event handler for this custom element.
+    fn handle_event_mut(&mut self, _element: &HtmlElement, _event: &Event) {
         // noop
     }
 }

@@ -104,6 +104,7 @@ fn expand_component_def(
     }
 }
 
+// TODO(jwall): Stateful elements?
 fn expand_wc_struct_trait_shim(
     struct_name: &Ident,
     once_name: &Ident,
@@ -224,45 +225,51 @@ fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
             }
 
             #[::wasm_bindgen::prelude::wasm_bindgen]
-            pub fn init_impl(&self, element: &web_sys::HtmlElement) {
+            pub fn init_impl(&mut self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.init(element);
+                self.init_mut(element);
             }
 
             #[::wasm_bindgen::prelude::wasm_bindgen]
-            pub fn connected_impl(&self, element: &web_sys::HtmlElement) {
+            pub fn connected_impl(&mut self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.connected(element);
+                self.connected_mut(element);
             }
 
             #[::wasm_bindgen::prelude::wasm_bindgen]
-            pub fn disconnected_impl(&self, element: &web_sys::HtmlElement) {
+            pub fn disconnected_impl(&mut self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.disconnected(element);
+                self.disconnected_mut(element);
             }
 
             #[::wasm_bindgen::prelude::wasm_bindgen]
-            pub fn adopted_impl(&self, element: &web_sys::HtmlElement) {
+            pub fn adopted_impl(&mut self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.adopted(element);
+                self.adopted_mut(element);
             }
 
 
             #[::wasm_bindgen::prelude::wasm_bindgen]
             pub fn attribute_changed_impl(
-                &self,
+                &mut self,
                 element: &web_sys::HtmlElement,
                 name: ::wasm_bindgen::JsValue,
                 old_value: ::wasm_bindgen::JsValue,
                 new_value: ::wasm_bindgen::JsValue,
             ) {
                 use #trait_path;
-                self.attribute_changed(element, name, old_value, new_value);
+                self.attribute_changed(element, name.clone(), old_value.clone(), new_value.clone());
+                self.attribute_changed_mut(element, name, old_value, new_value);
             }
 
-            pub fn handle_component_event_impl(&self, element: &web_sys::HtmlElement, event: &web_sys::Event) {
+            pub fn handle_component_event_impl(&mut self, element: &web_sys::HtmlElement, event: &web_sys::Event) {
                 use #trait_path;
                 self.handle_event(element, event);
+                self.handle_event_mut(element, event);
             }
         }
     }
