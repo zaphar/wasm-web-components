@@ -225,6 +225,19 @@ fn expand_wasm_shim(struct_name: &Ident) -> syn::ItemImpl {
             }
 
             #[::wasm_bindgen::prelude::wasm_bindgen]
+            #[doc = "Attach an open shadowroot to our element."]
+            pub fn attach_shadow(&self, element: &web_sys::HtmlElement, root: &str) {
+                self.attach_shadow_with_mode(element, root, web_sys::ShadowRootMode::Open);
+            }
+
+            #[::wasm_bindgen::prelude::wasm_bindgen]
+            #[doc = "Attach a shadowroot with the given mode to our element."]
+            pub fn attach_shadow_with_mode(&self, element: &web_sys::HtmlElement, root: &str, mode: web_sys::ShadowRootMode) {
+                let shadow_root = element.attach_shadow(&web_sys::ShadowRootInit::new(mode)).unwrap();
+                shadow_root.set_inner_html(root);
+            }
+
+            #[::wasm_bindgen::prelude::wasm_bindgen]
             pub fn init_impl(&mut self, element: &web_sys::HtmlElement) {
                 use #trait_path;
                 self.init(element);
