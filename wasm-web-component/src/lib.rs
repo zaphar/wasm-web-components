@@ -437,6 +437,94 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
+    fn test_component_mut() {
+        #[web_component(
+            class_name = "MyElementMut",
+            element_name = "my-element-mut",
+            observed_attrs = "['class']",
+        )]
+        pub struct MyElementMutImpl {}
+
+        impl WebComponentBinding for MyElementMutImpl {
+            fn connected_mut(&mut self, element: &HtmlElement) {
+                let node = Text::new().unwrap();
+                node.set_text_content(Some("Added a text node on connect".into()));
+                element.append_child(&node).unwrap();
+            }
+
+            fn disconnected_mut(&mut self, element: &HtmlElement) {
+                let node = element.first_child().unwrap();
+                element.remove_child(&node).unwrap();
+            }
+
+            fn adopted_mut(&mut self, element: &HtmlElement) {
+                let node = Text::new().unwrap();
+                node.set_text_content(Some("Added a text node on adopt".into()));
+                element.append_child(&node).unwrap();
+            }
+
+            fn attribute_changed_mut(
+                &mut self,
+                element: &HtmlElement,
+                name: JsValue,
+                old_value: JsValue,
+                new_value: JsValue,
+            ) {
+                let node = element.first_child().unwrap();
+                node.set_text_content(Some(&format!(
+                    "Setting {} from {} to {}",
+                    name.as_string().unwrap_or("None".to_owned()),
+                    old_value.as_string().unwrap_or("None".to_owned()),
+                    new_value.as_string().unwrap_or("None".to_owned()),
+                )));
+                element.append_child(&node).unwrap();
+            }
+        }
+        let obj = MyElementMutImpl::define().expect("Failed to define web component");
+        let fun = obj.element_constructor.dyn_ref::<Function>().unwrap();
+        assert_eq!(fun.name(), MyElementMutImpl::class_name());
+        let element = MyElementMutImpl::create();
+        assert_eq!(
+            element.tag_name().to_uppercase(),
+            MyElementMutImpl::element_name().to_uppercase()
+        );
+        let document = window().unwrap().document().unwrap();
+        let body = document.body().unwrap();
+
+        // Test the connected callback
+        body.append_child(&element).unwrap();
+        assert_eq!(
+            element.text_content().unwrap(),
+            "Added a text node on connect"
+        );
+
+        // Test the disconnected callback
+        body.remove_child(&element).unwrap();
+        assert_eq!(element.text_content().unwrap(), "");
+
+        body.append_child(&element).unwrap();
+        element.set_attribute("class", "foo").unwrap();
+        assert_eq!(
+            element.text_content().unwrap(),
+            "Setting class from None to foo"
+        );
+
+        // NOTE(jwall): If we are running headless then this can fail sometimes.
+        //   We don't fail the test when that happens.
+        if let Ok(Some(new_window)) = window().unwrap().open() {
+            // Test the adopted callback
+            // First we need a new window with a new document to perform the adoption with.
+            new_window.document().unwrap().adopt_node(&element).unwrap();
+            assert_eq!(
+                element.text_content().unwrap(),
+                "Added a text node on adopt"
+            );
+        } else {
+            assert!(false);
+        }
+    }
+    
+    #[wasm_bindgen_test]
     fn test_component_no_element_name() {
         #[web_component(class_name = "AnElement")]
         pub struct AnElement {}
