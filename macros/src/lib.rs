@@ -104,7 +104,6 @@ fn expand_component_def(
     }
 }
 
-// TODO(jwall): Stateful elements?
 fn expand_wc_struct_trait_shim(
     struct_name: &Ident,
     once_name: &Ident,
@@ -181,7 +180,6 @@ fn expand_wc_struct_trait_shim(
         this._impl.attribute_changed_impl(this, name, oldValue, newValue);
     }}
 
-    // TODO(jwall): We need to provide a way to attach this event handler properly
     handleComponentEvent(evt) {{
         this._impl.handle_component_event_impl(this, evt);
     }}
@@ -367,7 +365,6 @@ fn expand_template_struct(item_struct: ItemStruct) -> TokenStream {
 /// Creates the necessary Rust and Javascript shims for a Web Component.
 #[proc_macro_attribute]
 pub fn web_component(attr: TokenStream, item: TokenStream) -> TokenStream {
-    // TODO(jwall): Attrs for class name and element name
     // Gather our attributes
     let args = parse_macro_input!(attr as AttributeArgs);
     let item_struct = parse_macro_input!(item as ItemStruct);
