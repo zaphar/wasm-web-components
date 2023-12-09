@@ -33,14 +33,23 @@ fn expand_crate_ref(name: &str, path: Path) -> syn::Path {
     }
 }
 
+struct AttributeConfig {
+    class_name: Literal,
+    element_name: Literal,
+    observed_attributes: Literal,
+    observed_events: Literal,
+    base_class: Literal,
+}
+
 fn get_class_and_element_names(
     args: Vec<NestedMeta>,
     struct_name: &Ident,
-) -> (Literal, Literal, Literal, Literal) {
+) -> AttributeConfig {
     let mut class_name = None;
     let mut element_name = None;
     let mut observed_attributes = None;
     let mut observed_events = None;
+    let mut base_class = None;
     for arg in args {
         if let NestedMeta::Meta(Meta::NameValue(nv)) = arg {
             if nv.path.is_ident("class_name") {
@@ -59,6 +68,10 @@ fn get_class_and_element_names(
                 if let Lit::Str(nm) = nv.lit {
                     observed_events = Some(nm);
                 }
+            } else if nv.path.is_ident("base_clas") {
+                if let Lit::Str(nm) = nv.lit {
+                    base_class = Some(nm);
+                }
             }
         }
     }
@@ -74,6 +87,7 @@ fn get_class_and_element_names(
             LitStr::new(&class_kebab, Span::call_site()).token()
         }
     };
+    let base_class = base_class.unwrap_or_else(|| LitStr::new("HTMLElement", Span::call_site())).token();
 
     let observed_attributes = observed_attributes
         .map(|n| n.token())
@@ -81,7 +95,13 @@ fn get_class_and_element_names(
     let observed_events = observed_events
         .map(|n| n.token())
         .unwrap_or_else(|| LitStr::new("[]", Span::call_site()).token());
-    (class_name, element_name, observed_attributes, observed_events)
+    AttributeConfig {
+        class_name,
+        element_name,
+        observed_attributes,
+        observed_events,
+        base_class,
+    }
 }
 
 fn expand_component_def(
@@ -107,9 +127,15 @@ fn expand_component_def(
 fn expand_wc_struct_trait_shim(
     struct_name: &Ident,
     once_name: &Ident,
-    observed_attrs: Literal,
-    observed_events: Literal,
+    config: AttributeConfig,
 ) -> syn::ItemImpl {
+    let AttributeConfig {
+        class_name: _,
+        element_name: _,
+        observed_attributes,
+        observed_events,
+        base_class,
+    } = config;
     let trait_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentDef));
     let handle_path = expand_crate_ref("wasm-web-component", parse_quote!(WebComponentHandle));
     parse_quote! {
@@ -139,7 +165,7 @@ fn expand_wc_struct_trait_shim(
                     return Err("Custom Element has already been defined".into());
                 }
                 let body = format!(
-                "class {name} extends HTMLElement {{
+                "class {name} extends {base_class} {{
     constructor() {{
         super();
         this._impl = impl();
@@ -189,8 +215,9 @@ var element = customElements.get(\"{element_name}\");
 return element;",
                     name = Self::class_name(),
                     element_name = Self::element_name(),
-                    observed_attributes = #observed_attrs,
+                    observed_attributes = #observed_attributes,
                     observed_events = #observed_events,
+                    base_class = #base_class,
                 );
                 let fun = js_sys::Function::new_with_args("impl", &body);
                 let f: Box<dyn FnMut() -> Self> = Box::new(|| {
@@ -295,19 +322,16 @@ fn expand_binding(struct_name: &Ident) -> syn::ItemImpl {
 
 fn expand_web_component_struct(
     item_struct: ItemStruct,
-    class_name: Literal,
-    element_name: Literal,
-    observed_attributes: Literal,
-    observed_events: Literal,
+    config: AttributeConfig,
 ) -> TokenStream {
     let struct_name = item_struct.ident.clone();
     let struct_once_name = Ident::new(
         &(struct_name.to_string().to_snake_case().to_uppercase() + "_ONCE"),
         Span::call_site(),
     );
-    let component_def = expand_component_def(&struct_name, &class_name, &element_name);
+    let component_def = expand_component_def(&struct_name, &config.class_name, &config.element_name);
     let non_wasm_impl =
-        expand_wc_struct_trait_shim(&struct_name, &struct_once_name, observed_attributes, observed_events);
+        expand_wc_struct_trait_shim(&struct_name, &struct_once_name, config);
     let wasm_shim = expand_wasm_shim(&struct_name);
     let binding_trait = expand_binding(&struct_name);
     let expanded = quote! {
@@ -369,10 +393,10 @@ pub fn web_component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(attr as AttributeArgs);
     let item_struct = parse_macro_input!(item as ItemStruct);
 
-    let (class_name, element_name, observed_attributes, observed_events) =
+    let config =
         get_class_and_element_names(args, &item_struct.ident);
 
-    expand_web_component_struct(item_struct, class_name, element_name, observed_attributes, observed_events)
+    expand_web_component_struct(item_struct, config)
 }
 
 /// Creates the neccessary Rust and Javascript shims for rendering an HtmlTemplateElement

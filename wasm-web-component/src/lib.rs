@@ -25,12 +25,17 @@ use web_sys::{window, Element, Event, HtmlElement, Window};
 ///
 /// ## Example
 ///
-/// ```rust
+/// ```ignore
+/// use web_sys::*;
+/// use wasm_bindgen::*;
+/// use wasm_web_component::{web_component, WebComponent, WebComponentHandle, WebComponentDef, WebComponentBinding};
+/// 
 /// #[web_component(
 ///     class_name = "MyElement",
 ///     element_name = "my-element",
-///     observed_attrs = "['class']"
-///     observed_events = "['click']"
+///     observed_attrs = "['class']",
+///     observed_events = "['click']",
+///     base_class = "HTMLElement"
 /// )]
 /// pub struct MyElementImpl {}
 /// 
@@ -69,7 +74,7 @@ use web_sys::{window, Element, Event, HtmlElement, Window};
 ///         element.append_child(&node).unwrap();
 ///     }
 ///
-///     fn handle_event(&self, element: &HtmlElement, event: &Event)) {
+///     fn handle_event(&self, element: &HtmlElement, event: &Event) {
 ///         // handle this event
 ///     }
 /// }
@@ -98,7 +103,10 @@ pub use wasm_web_component_macros::web_component;
 /// if the template has not been defined yet `None` will get returned.
 ///
 /// ## Example usage
-/// ```rust
+/// ```ignore
+/// use wasm_web_component::*;
+/// use wasm_bindgen::*;
+/// # #[cfg(feature = "HtmlTemplateElement")]
 /// #[template_element]
 /// pub struct MyTemplate ();
 /// impl TemplateElementRender for MyTemplate {
