@@ -19,6 +19,8 @@ use web_sys::{window, Element, Event, HtmlElement, Window};
 /// * `element_name = "class-name"` - A valid custom element name to use for the element. if not proviced derives it from the class name.
 /// * `observed_attrs = "['attr1', 'attr2']"` - A javascript array with a list of observed attributes for this compoment. Defaults to "[]".
 /// * `observed_events = "['click', 'change']"` - A javascript array with a list of observed event types for this compoment. Defaults to "[]".
+/// * `base_class = "HTMLInputElement"` - The HTMLElement base class this custom-element should
+/// inherit from. Defaults to "HTMLElement".
 ///
 /// It will also create a `Self::define_once` method that will define the WebComponent exactly
 /// once.
