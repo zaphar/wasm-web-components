@@ -68,7 +68,7 @@ fn get_class_and_element_names(
                 if let Lit::Str(nm) = nv.lit {
                     observed_events = Some(nm);
                 }
-            } else if nv.path.is_ident("base_clas") {
+            } else if nv.path.is_ident("base_class") {
                 if let Lit::Str(nm) = nv.lit {
                     base_class = Some(nm);
                 }
